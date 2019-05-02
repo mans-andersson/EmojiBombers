@@ -5,6 +5,7 @@ type state struct {
 }
 
 type player struct {
+	ID int `json:"id"`
 	XPos int `json:"x_pos"`
 	YPos int `json:"y_pos"`
 }
