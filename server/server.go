@@ -12,16 +12,16 @@ import (
 
 var gameState state
 var id int
-var startingXPos = []int{100, 700, 100, 700}
-var startingYPos = []int{100, 700, 100, 700}
 
 func main() {
 	addBlockades()
+	initializePlayers()
 	initializeBombs()
 	initializePlacedBombs()
 	initializeExplosions()
 	go spawnBombs()
 	go checkDamage()
+	go startGame()
 	id = 0
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
@@ -40,9 +40,12 @@ func main() {
 
 func handleConnection(c net.Conn) {
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
+	if id > 3 {
+		return
+	}
 	playerID := id
-	id = id + 1
-	gameState.Players = append(gameState.Players, player{ID: playerID, XPos: startingXPos[playerID], YPos: startingYPos[playerID], Lives: 3})
+	gameState.Players[playerID].Spawned = true
+	id++
 	go sendState(c)
 	for {
 		time.Sleep(10 * time.Millisecond)
@@ -71,6 +74,14 @@ func addBlockades() {
 		for j := 0; j <= 800; j += 200 {
 			gameState.Blockades = append(gameState.Blockades, blockade{XPos: i, YPos: j})
 		}
+	}
+}
+
+func initializePlayers() {
+	startingXPos := []int{100, 700, 100, 700}
+	startingYPos := []int{100, 700, 700, 100}
+	for i := 0; i < 4; i++ {
+		gameState.Players = append(gameState.Players, player{ID: i, XPos: startingXPos[i], YPos: startingYPos[i], Lives: 3})
 	}
 }
 
@@ -217,4 +228,12 @@ func newPosition(id int, direction string) (int, int){
 
 func distance(x1 int, y1 int, x2 int, y2 int) float64 {
 	return math.Sqrt(math.Pow(float64(x1 - x2), 2) + math.Pow(float64(y1 - y2), 2))
+}
+
+func startGame() {
+	for {
+		if len(gameState.Players) > 1 && !gameState.GameStarted {
+			break
+		}
+	}
 }

@@ -11,6 +11,8 @@ state = {
     "bombs": [],
     "placed_bombs": [],
     "explosions": [],
+    "game_started": False,
+    "winner": {},
 }
 screen = pygame.display.set_mode((800, 800), pygame.DOUBLEBUF)
 player_image_1 = pygame.image.load("assets/player1.png").convert_alpha()
@@ -78,12 +80,13 @@ def render():
 
 def render_player(id):
     player = state["players"][id]
-    if player["dead"]:
-        screen.blit(dead_image, (player["x_pos"] - 50, player["y_pos"] - 50))
-    elif player["damage_taken"]:
-        screen.blit(damaged_image, (player["x_pos"] - 50, player["y_pos"] - 50))
-    else:
-        screen.blit(player_images[id], (player["x_pos"] - 50, player["y_pos"] - 50))
+    if player["spawned"]:
+        if player["dead"]:
+            screen.blit(dead_image, (player["x_pos"] - 50, player["y_pos"] - 50))
+        elif player["damage_taken"]:
+            screen.blit(damaged_image, (player["x_pos"] - 50, player["y_pos"] - 50))
+        else:
+            screen.blit(player_images[id], (player["x_pos"] - 50, player["y_pos"] - 50))
 
 
 def events():
