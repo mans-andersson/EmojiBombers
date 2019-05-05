@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"math/rand"
 	"net"
 	"time"
 )
@@ -13,6 +14,9 @@ var gameState state
 var id int
 
 func main() {
+	addBlockades()
+	initializeBombs()
+	go spawnBombs()
 	id = 0
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
@@ -31,12 +35,12 @@ func main() {
 
 func handleConnection(c net.Conn) {
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
-	// rand.Seed(time.Now().UnixNano())
 	playerID := id
 	id = id + 1
 	gameState.Players = append(gameState.Players, player{ID: playerID, XPos: startingXPos[playerID], YPos: startingYPos[playerID]})
 	go sendState(c)
 	for {
+		time.Sleep(10 * time.Millisecond)
 		command := action{}
 		netData, err := bufio.NewReader(c).ReadString(';')
 		if err != nil {
@@ -54,6 +58,31 @@ func sendState(c net.Conn) {
 	for {
 		time.Sleep(16 * time.Millisecond)
 		c.Write(stateToJsonTransmission())
+	}
+}
+
+func addBlockades() {
+	for i := 0; i <= 800; i += 200 {
+		for j := 0; j <= 800; j += 200 {
+			gameState.Blockades = append(gameState.Blockades, blockade{XPos: i, YPos: j})
+		}
+	}
+}
+
+func initializeBombs() {
+	for i := 100; i < 800; i += 200 {
+		for j := 100; j < 800; j += 200 {
+			gameState.Bombs = append(gameState.Bombs, bomb{Spawned: false, XPos: i, YPos: j})
+		}
+	}
+}
+
+func spawnBombs() {
+	for {
+		time.Sleep(3000 * time.Millisecond)
+		rand.Seed(time.Now().UnixNano())
+		i := rand.Intn(len(gameState.Bombs))
+		gameState.Bombs[i].Spawned = true
 	}
 }
 
@@ -86,6 +115,19 @@ func movePlayer(id int, direction string) {
 	for _, player := range gameState.Players {
 		if(distance(newX, newY, player.XPos, player.YPos) <= 100) && player.ID != id {
 			return
+		}
+	}
+	for _, blockade := range gameState.Blockades {
+		if(distance(newX, newY, blockade.XPos, blockade.YPos) <= 75) {
+			return
+		}
+	}
+	for i, bomb := range gameState.Bombs {
+		if(bomb.Spawned) {
+			if(distance(newX, newY, bomb.XPos, bomb.YPos) <= 75) {
+				gameState.Bombs[i].Spawned = false
+				gameState.Players[id].BombCount++
+			}
 		}
 	}
 	gameState.Players[id].XPos = newX

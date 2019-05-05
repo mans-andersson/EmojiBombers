@@ -5,12 +5,14 @@ import json
 import threading
 
 pygame.init()
-state = {"players": []}
+state = {"players": [], "blockades": [], "bombs": []}
 screen = pygame.display.set_mode((800, 800), pygame.DOUBLEBUF)
 player_image_1 = pygame.image.load("assets/player1.png").convert_alpha()
 player_image_2 = pygame.image.load("assets/player2.png").convert_alpha()
 player_image_3 = pygame.image.load("assets/player3.png").convert_alpha()
 player_image_4 = pygame.image.load("assets/player4.png").convert_alpha()
+block_image = pygame.image.load("assets/block.png").convert_alpha()
+joystick_image = pygame.image.load("assets/joystick.png").convert_alpha()
 player_images = [player_image_1, player_image_2, player_image_3, player_image_4]
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("127.0.0.1", 8080))
@@ -39,13 +41,20 @@ def receive_state():
         buffer += s.recv(512).decode("utf-8")
         result = buffer.split(";")
         if len(result) > 2:
-            return result[1]
+            for res in result[1 : len(result) - 1]:
+                if len(res) > 0:
+                    return res
 
 
 def render():
     screen.fill((0, 0, 0))
     for player in state["players"]:
         render_player(player["id"])
+    for blockade in state["blockades"]:
+        screen.blit(block_image, (blockade["x_pos"] - 25, blockade["y_pos"] - 25))
+    for bomb in state["bombs"]:
+        if bomb["spawned"]:
+            screen.blit(joystick_image, (bomb["x_pos"] - 25, bomb["y_pos"] - 25))
     pygame.display.update()
 
 
@@ -70,11 +79,11 @@ def keypress():
     keys = pygame.key.get_pressed()
     if keys[pygame.K_UP]:
         s.sendall(b'{ "action":"up"};')
-    if keys[pygame.K_LEFT]:
+    elif keys[pygame.K_LEFT]:
         s.sendall(b'{ "action":"left"};')
-    if keys[pygame.K_DOWN]:
+    elif keys[pygame.K_DOWN]:
         s.sendall(b'{ "action":"down"};')
-    if keys[pygame.K_RIGHT]:
+    elif keys[pygame.K_RIGHT]:
         s.sendall(b'{ "action":"right"};')
 
 
