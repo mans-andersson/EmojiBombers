@@ -16,6 +16,8 @@ var id int
 func main() {
 	addBlockades()
 	initializeBombs()
+	initializePlacedBombs()
+	initializeExplosions()
 	go spawnBombs()
 	id = 0
 	ln, err := net.Listen("tcp", ":8080")
@@ -77,6 +79,18 @@ func initializeBombs() {
 	}
 }
 
+func initializePlacedBombs() {
+	for i := 0; i < 4; i++ {
+		gameState.PlacedBombs = append(gameState.PlacedBombs, bomb{Spawned: false, XPos: 0, YPos: 0})
+	}
+}
+
+func initializeExplosions() {
+	for i := 0; i < 4; i++ {
+		gameState.Explosions = append(gameState.Explosions, bomb{Spawned: false, XPos: 0, YPos: 0})
+	}
+}
+
 func spawnBombs() {
 	for {
 		time.Sleep(3000 * time.Millisecond)
@@ -107,7 +121,31 @@ func processCommand(id int, command *action) {
 		movePlayer(id, "down")
 	} else if command.Action == "right" {
 		movePlayer(id, "right")
+	} else if command.Action == "space" {
+		placeBomb(id, gameState.Players[id].XPos, gameState.Players[id].YPos)
 	}
+}
+
+func placeBomb(id int, x int, y int) {
+	if gameState.PlacedBombs[id].Spawned || gameState.Players[id].BombCount == 0 {
+		return
+	}
+	gameState.PlacedBombs[id].Spawned = true
+	gameState.PlacedBombs[id].XPos = x
+	gameState.PlacedBombs[id].YPos = y
+	gameState.Players[id].BombCount--
+	go explodeBomb(id)
+}
+
+func explodeBomb(id int) {
+	time.Sleep(2000 * time.Millisecond)
+	gameState.PlacedBombs[id].Spawned = false
+	gameState.Explosions[id].XPos = gameState.PlacedBombs[id].XPos
+	gameState.Explosions[id].YPos = gameState.PlacedBombs[id].YPos
+	gameState.Explosions[id].Spawned = true
+	time.Sleep(2000 * time.Millisecond)
+	gameState.Explosions[id].Spawned = false
+
 }
 
 func movePlayer(id int, direction string) {

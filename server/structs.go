@@ -4,6 +4,8 @@ type state struct {
 	Players []player `json:"players"`
 	Blockades []blockade `json:"blockades"`
 	Bombs []bomb  `json:"bombs"`
+	PlacedBombs []bomb `json:"placed_bombs"`
+	Explosions []bomb `json:"explosions"`
 }
 
 type player struct {
@@ -11,6 +13,7 @@ type player struct {
 	XPos int `json:"x_pos"`
 	YPos int `json:"y_pos"`
 	BombCount int `json:"bomb_count"`
+	Lives int `json:"lives"`
 }
 
 type bomb struct {
