@@ -20,6 +20,8 @@ player_image_4 = pygame.image.load("assets/player4.png").convert_alpha()
 block_image = pygame.image.load("assets/block.png").convert_alpha()
 gift_image = pygame.image.load("assets/gift.png").convert_alpha()
 bomb_image = pygame.image.load("assets/bomb.png").convert_alpha()
+damaged_image = pygame.image.load("assets/damaged.png").convert_alpha()
+dead_image = pygame.image.load("assets/dead.png").convert_alpha()
 explosion_image = pygame.image.load("assets/explosion.png").convert_alpha()
 player_images = [player_image_1, player_image_2, player_image_3, player_image_4]
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -76,7 +78,12 @@ def render():
 
 def render_player(id):
     player = state["players"][id]
-    screen.blit(player_images[id], (player["x_pos"] - 50, player["y_pos"] - 50))
+    if player["dead"]:
+        screen.blit(dead_image, (player["x_pos"] - 50, player["y_pos"] - 50))
+    elif player["damage_taken"]:
+        screen.blit(damaged_image, (player["x_pos"] - 50, player["y_pos"] - 50))
+    else:
+        screen.blit(player_images[id], (player["x_pos"] - 50, player["y_pos"] - 50))
 
 
 def events():

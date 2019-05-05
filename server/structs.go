@@ -14,6 +14,8 @@ type player struct {
 	YPos int `json:"y_pos"`
 	BombCount int `json:"bomb_count"`
 	Lives int `json:"lives"`
+	DamageTaken bool `json:"damage_taken"`
+	Dead bool `json:"dead"`
 }
 
 type bomb struct {

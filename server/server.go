@@ -19,6 +19,7 @@ func main() {
 	initializePlacedBombs()
 	initializeExplosions()
 	go spawnBombs()
+	go checkDamage()
 	id = 0
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
@@ -39,7 +40,7 @@ func handleConnection(c net.Conn) {
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
 	playerID := id
 	id = id + 1
-	gameState.Players = append(gameState.Players, player{ID: playerID, XPos: startingXPos[playerID], YPos: startingYPos[playerID]})
+	gameState.Players = append(gameState.Players, player{ID: playerID, XPos: startingXPos[playerID], YPos: startingYPos[playerID], Lives: 3})
 	go sendState(c)
 	for {
 		time.Sleep(10 * time.Millisecond)
@@ -98,6 +99,30 @@ func spawnBombs() {
 		i := rand.Intn(len(gameState.Bombs))
 		gameState.Bombs[i].Spawned = true
 	}
+}
+
+func checkDamage() {
+	for {
+		time.Sleep(16 * time.Millisecond)
+		for id, player := range gameState.Players {
+			for _, exp := range gameState.Explosions {
+				if(distance(player.XPos, player.YPos, exp.XPos, exp.YPos) <= 150 && !player.DamageTaken && exp.Spawned) {
+					gameState.Players[id].DamageTaken = true
+					go playerDamaged(id)
+				}
+			}
+		}
+	}
+}
+
+func playerDamaged(id int) {
+	gameState.Players[id].Lives--
+	fmt.Println(gameState.Players[id].Lives)
+	if(gameState.Players[id].Lives == 0) {
+		gameState.Players[id].Dead = true
+	}
+	time.Sleep(1500 * time.Millisecond)
+	gameState.Players[id].DamageTaken = false
 }
 
 func stateToJsonTransmission() []byte {
