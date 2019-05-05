@@ -12,6 +12,8 @@ import (
 
 var gameState state
 var id int
+var startingXPos = []int{100, 700, 100, 700}
+var startingYPos = []int{100, 700, 100, 700}
 
 func main() {
 	addBlockades()
@@ -117,7 +119,6 @@ func checkDamage() {
 
 func playerDamaged(id int) {
 	gameState.Players[id].Lives--
-	fmt.Println(gameState.Players[id].Lives)
 	if(gameState.Players[id].Lives == 0) {
 		gameState.Players[id].Dead = true
 	}
@@ -138,6 +139,9 @@ func stateToJsonTransmission() []byte {
 }
 
 func processCommand(id int, command *action) {
+	if gameState.Players[id].Dead {
+		return
+	}
 	if command.Action == "up" {
 		movePlayer(id, "up")
 	} else if command.Action == "left" {

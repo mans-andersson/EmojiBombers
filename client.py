@@ -96,7 +96,7 @@ def events():
 def keypress():
     global last_update
     current_time = pygame.time.get_ticks()
-    if current_time - last_update < 5:
+    if current_time - last_update < 16:
         return
     last_update = current_time
     keys = pygame.key.get_pressed()
