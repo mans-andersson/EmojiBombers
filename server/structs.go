@@ -6,8 +6,7 @@ type state struct {
 	Bombs []bomb  `json:"bombs"`
 	PlacedBombs []bomb `json:"placed_bombs"`
 	Explosions []bomb `json:"explosions"`
-	GameStarted bool `json:"game_started"`
-	Winner player `json:"winner"`
+	Winner int `json:"winner"`
 }
 
 type player struct {

@@ -14,6 +14,7 @@ var gameState state
 var id int
 
 func main() {
+	gameState.Winner = -1
 	addBlockades()
 	initializePlayers()
 	initializeBombs()
@@ -21,7 +22,7 @@ func main() {
 	initializeExplosions()
 	go spawnBombs()
 	go checkDamage()
-	go startGame()
+	go checkVictory()
 	id = 0
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
@@ -78,10 +79,18 @@ func addBlockades() {
 }
 
 func initializePlayers() {
+	for i := 0; i < 4; i++ {
+		gameState.Players = append(gameState.Players, player{ID: i, Lives: 3})
+	}
+	initializeStartingPositions()
+}
+
+func initializeStartingPositions() {
 	startingXPos := []int{100, 700, 100, 700}
 	startingYPos := []int{100, 700, 700, 100}
 	for i := 0; i < 4; i++ {
-		gameState.Players = append(gameState.Players, player{ID: i, XPos: startingXPos[i], YPos: startingYPos[i], Lives: 3})
+		gameState.Players[i].XPos = startingXPos[i]
+		gameState.Players[i].YPos = startingYPos[i]
 	}
 }
 
@@ -128,6 +137,44 @@ func checkDamage() {
 	}
 }
 
+func checkVictory() {
+	for {
+		time.Sleep(1000 * time.Millisecond)
+		if(countSpawnedPlayers() > 1) {
+			winner := getWinner()
+			if(winner != -1) {
+				time.Sleep(1000 * time.Millisecond)
+				gameState.Winner = winner
+			}
+		}
+	}
+}
+
+func getWinner() int {
+	aliveCount := 0
+	potentialWinner := 0
+	for i, p := range gameState.Players {
+		if(!p.Dead && p.Spawned) {
+			aliveCount++
+			potentialWinner = i
+		}
+	}
+	if aliveCount == 1 {
+		return potentialWinner
+	}
+	return -1
+}
+
+func countSpawnedPlayers() int {
+	counter := 0
+	for _, p := range gameState.Players {
+		if(p.Spawned) {
+			counter++
+		}
+	}
+	return counter
+}
+
 func playerDamaged(id int) {
 	gameState.Players[id].Lives--
 	if(gameState.Players[id].Lives == 0) {
@@ -141,7 +188,6 @@ func stateToJsonTransmission() []byte {
 	result := ([]byte)(";")
 	s, err := json.Marshal(&gameState)
 	if err != nil {
-		fmt.Println(err)
 		return []byte{}
 	}
 	result = append(result, s...)
@@ -191,7 +237,7 @@ func explodeBomb(id int) {
 func movePlayer(id int, direction string) {
 	newX, newY := newPosition(id, direction)
 	for _, player := range gameState.Players {
-		if(distance(newX, newY, player.XPos, player.YPos) <= 100) && player.ID != id {
+		if(distance(newX, newY, player.XPos, player.YPos) <= 100) && player.ID != id && player.Spawned {
 			return
 		}
 	}
@@ -228,12 +274,4 @@ func newPosition(id int, direction string) (int, int){
 
 func distance(x1 int, y1 int, x2 int, y2 int) float64 {
 	return math.Sqrt(math.Pow(float64(x1 - x2), 2) + math.Pow(float64(y1 - y2), 2))
-}
-
-func startGame() {
-	for {
-		if len(gameState.Players) > 1 && !gameState.GameStarted {
-			break
-		}
-	}
 }

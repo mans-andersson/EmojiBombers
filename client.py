@@ -11,8 +11,7 @@ state = {
     "bombs": [],
     "placed_bombs": [],
     "explosions": [],
-    "game_started": False,
-    "winner": {},
+    "winner": -1,
 }
 screen = pygame.display.set_mode((800, 800), pygame.DOUBLEBUF)
 player_image_1 = pygame.image.load("assets/player1.png").convert_alpha()
@@ -25,6 +24,7 @@ bomb_image = pygame.image.load("assets/bomb.png").convert_alpha()
 damaged_image = pygame.image.load("assets/damaged.png").convert_alpha()
 dead_image = pygame.image.load("assets/dead.png").convert_alpha()
 explosion_image = pygame.image.load("assets/explosion.png").convert_alpha()
+victory_text = pygame.image.load("assets/victory_text.png").convert_alpha()
 player_images = [player_image_1, player_image_2, player_image_3, player_image_4]
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("127.0.0.1", 8080))
@@ -50,7 +50,7 @@ def listener():
 def receive_state():
     buffer = ""
     while True:
-        buffer += s.recv(512).decode("utf-8")
+        buffer += s.recv(1024).decode("utf-8")
         result = buffer.split(";")
         if len(result) > 2:
             for res in result[1 : len(result) - 1]:
@@ -60,6 +60,9 @@ def receive_state():
 
 def render():
     screen.fill((0, 0, 0))
+    if state["winner"] != -1:
+        render_victory_message(state["winner"])
+        return
     for player in state["players"]:
         render_player(player["id"])
     for blockade in state["blockades"]:
@@ -87,6 +90,12 @@ def render_player(id):
             screen.blit(damaged_image, (player["x_pos"] - 50, player["y_pos"] - 50))
         else:
             screen.blit(player_images[id], (player["x_pos"] - 50, player["y_pos"] - 50))
+
+
+def render_victory_message(winnerID):
+    screen.blit(player_images[winnerID], (350, 350))
+    screen.blit(victory_text, (100, 460))
+    pygame.display.update()
 
 
 def events():
