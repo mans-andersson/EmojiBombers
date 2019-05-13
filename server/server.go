@@ -14,15 +14,10 @@ var gameState state
 var id int
 
 func main() {
-	gameState.Winner = -1
 	addBlockades()
 	initializePlayers()
-	initializeBombs()
-	initializePlacedBombs()
-	initializeExplosions()
-	go spawnBombs()
-	go checkDamage()
-	go checkVictory()
+	resetGame()
+	go waitForStart()
 	id = 0
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {
@@ -78,11 +73,30 @@ func addBlockades() {
 	}
 }
 
+func waitForStart() {
+	for {
+		time.Sleep(1000 * time.Millisecond)
+		if(countSpawnedPlayers() > 1) {
+			go spawnBombs()
+			go checkDamage()
+			go checkVictory()
+			return
+		}
+	}
+}
+
 func initializePlayers() {
 	for i := 0; i < 4; i++ {
-		gameState.Players = append(gameState.Players, player{ID: i, Lives: 3})
+		gameState.Players = append(gameState.Players, player{ID: i})
 	}
 	initializeStartingPositions()
+}
+
+func initializePlayerLives() {
+	for i := 0; i < 4; i++ {
+		gameState.Players[i].Lives = 3
+		gameState.Players[i].Dead = false
+	}
 }
 
 func initializeStartingPositions() {
@@ -95,28 +109,34 @@ func initializeStartingPositions() {
 }
 
 func initializeBombs() {
+	bombs := []bomb{}
 	for i := 100; i < 800; i += 200 {
 		for j := 100; j < 800; j += 200 {
-			gameState.Bombs = append(gameState.Bombs, bomb{Spawned: false, XPos: i, YPos: j})
+			bombs = append(bombs, bomb{Spawned: false, XPos: i, YPos: j})
 		}
 	}
+	gameState.Bombs = bombs
 }
 
 func initializePlacedBombs() {
+	placedBombs := []bomb{}
 	for i := 0; i < 4; i++ {
-		gameState.PlacedBombs = append(gameState.PlacedBombs, bomb{Spawned: false, XPos: 0, YPos: 0})
+		placedBombs = append(placedBombs, bomb{Spawned: false, XPos: 0, YPos: 0})
 	}
+	gameState.PlacedBombs = placedBombs
 }
 
 func initializeExplosions() {
+	explosions := []bomb{}
 	for i := 0; i < 4; i++ {
-		gameState.Explosions = append(gameState.Explosions, bomb{Spawned: false, XPos: 0, YPos: 0})
+		explosions = append(explosions, bomb{Spawned: false, XPos: 0, YPos: 0})
 	}
+	gameState.Explosions = explosions
 }
 
 func spawnBombs() {
 	for {
-		time.Sleep(3000 * time.Millisecond)
+		time.Sleep(4000 * time.Millisecond)
 		rand.Seed(time.Now().UnixNano())
 		i := rand.Intn(len(gameState.Bombs))
 		gameState.Bombs[i].Spawned = true
@@ -145,9 +165,20 @@ func checkVictory() {
 			if(winner != -1) {
 				time.Sleep(1000 * time.Millisecond)
 				gameState.Winner = winner
+				time.Sleep(5000 * time.Millisecond)
+				resetGame()
 			}
 		}
 	}
+}
+
+func resetGame() {
+	gameState.Winner = -1
+	initializeStartingPositions()
+	initializePlayerLives()
+	initializeExplosions()
+	initializeBombs()
+	initializePlacedBombs()
 }
 
 func getWinner() int {
