@@ -1,4 +1,4 @@
-# EmojiBomber
+# EmojiBombers
 This is a game inspired by the classic Bomberman. It implements multiplayer functionality using TCP sockets.
 
 The software has two parts, a client and a server.
