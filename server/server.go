@@ -53,19 +53,12 @@ func handleConnection(c net.Conn) {
 		// Contiously read data sent from the client and process it
 		time.Sleep(10 * time.Millisecond)
 		command := action{}
-		netData, err := bufio.NewReader(c).ReadString(';')
-		if err != nil {
-			fmt.Println(err)
-		}
+		netData, _ := bufio.NewReader(c).ReadString(';')
 		if len(netData) > 0 {
 			netData = netData[:len(netData)-1]
 		}
-		err = json.Unmarshal([]byte(netData), &command)
-		if(err != nil){
-			fmt.Println(err)
-		} else {
-			go processCommand(playerID, &command)
-	}
+		json.Unmarshal([]byte(netData), &command)
+		go processCommand(playerID, &command)
 	}
 }
 
