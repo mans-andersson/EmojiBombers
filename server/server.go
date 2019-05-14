@@ -78,6 +78,7 @@ func waitForStart() {
 		time.Sleep(1000 * time.Millisecond)
 		if(countSpawnedPlayers() > 1) {
 			go spawnBombs()
+			go spawnSnowflakes()
 			go checkDamage()
 			go checkVictory()
 			return
@@ -118,6 +119,16 @@ func initializeBombs() {
 	gameState.Bombs = bombs
 }
 
+func initializeSnowflakes() {
+	snowflakes := []bomb{}
+	for i := 100; i < 800; i += 200 {
+		for j := 100; j < 800; j += 200 {
+			snowflakes = append(snowflakes, bomb{Spawned: false, XPos: i, YPos: j})
+		}
+	}
+	gameState.Snowflakes = snowflakes
+}
+
 func initializePlacedBombs() {
 	placedBombs := []bomb{}
 	for i := 0; i < 4; i++ {
@@ -140,6 +151,15 @@ func spawnBombs() {
 		rand.Seed(time.Now().UnixNano())
 		i := rand.Intn(len(gameState.Bombs))
 		gameState.Bombs[i].Spawned = true
+	}
+}
+
+func spawnSnowflakes() {
+	for {
+		time.Sleep(10000 * time.Millisecond)
+		rand.Seed(time.Now().UnixNano())
+		i := rand.Intn(len(gameState.Snowflakes))
+		gameState.Snowflakes[i].Spawned = true
 	}
 }
 
@@ -178,6 +198,7 @@ func resetGame() {
 	initializePlayerLives()
 	initializeExplosions()
 	initializeBombs()
+	initializeSnowflakes()
 	initializePlacedBombs()
 }
 
@@ -221,8 +242,9 @@ func stateToJsonTransmission() []byte {
 	if err != nil {
 		return []byte{}
 	}
-	result = append(result, s...)
-	result = append(result, ([]byte)(";")...)
+	result = append(s, ([]byte)(";")...)
+	fmt.Println(string(result))
+	fmt.Println("")
 	return result
 }
 
@@ -262,11 +284,30 @@ func explodeBomb(id int) {
 	gameState.Explosions[id].Spawned = true
 	time.Sleep(2000 * time.Millisecond)
 	gameState.Explosions[id].Spawned = false
+}
 
+func stunPlayers(id int) {
+	for i, p := range gameState.Players {
+		if(p.ID != id) {
+			gameState.Players[i].Stunned = true
+		}
+	}
+	time.Sleep(5000 * time.Millisecond)
+	for i, p := range gameState.Players {
+		if(p.ID != id) {
+			gameState.Players[i].Stunned = false
+		}
+	}
 }
 
 func movePlayer(id int, direction string) {
+	if(gameState.Players[id].Stunned) {
+		return
+	}
 	newX, newY := newPosition(id, direction)
+	if(newX > 800 || newX < 0 || newY > 800 || newY < 0) {
+		return
+	}
 	for _, player := range gameState.Players {
 		if(distance(newX, newY, player.XPos, player.YPos) <= 100) && player.ID != id && player.Spawned {
 			return
@@ -282,6 +323,14 @@ func movePlayer(id int, direction string) {
 			if(distance(newX, newY, bomb.XPos, bomb.YPos) <= 75) {
 				gameState.Bombs[i].Spawned = false
 				gameState.Players[id].BombCount++
+			}
+		}
+	}
+	for i, snowflake := range gameState.Snowflakes {
+		if(snowflake.Spawned) {
+			if(distance(newX, newY, snowflake.XPos, snowflake.YPos) <= 75) {
+				gameState.Snowflakes[i].Spawned = false
+				go stunPlayers(id)
 			}
 		}
 	}

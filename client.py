@@ -9,6 +9,7 @@ state = {
     "players": [],
     "blockades": [],
     "bombs": [],
+    "snowflakes": [],
     "placed_bombs": [],
     "explosions": [],
     "winner": -1,
@@ -22,6 +23,8 @@ block_image = pygame.image.load("assets/block.png").convert_alpha()
 gift_image = pygame.image.load("assets/gift.png").convert_alpha()
 bomb_image = pygame.image.load("assets/bomb.png").convert_alpha()
 damaged_image = pygame.image.load("assets/damaged.png").convert_alpha()
+frozen_image = pygame.image.load("assets/frozen.png").convert_alpha()
+snowflake_image = pygame.image.load("assets/snowflake.png").convert_alpha()
 dead_image = pygame.image.load("assets/dead.png").convert_alpha()
 explosion_image = pygame.image.load("assets/explosion.png").convert_alpha()
 victory_text = pygame.image.load("assets/victory_text.png").convert_alpha()
@@ -42,9 +45,13 @@ def listener():
     while True:
         new_state = receive_state()
         try:
-            state.update(json.loads(new_state))
+            parsed = json.loads(new_state)
         except:
             print("Couldn't parse json")
+        try:
+            state.update(parsed)
+        except:
+            print("Couldn't load data into state")
 
 
 def receive_state():
@@ -73,6 +80,11 @@ def render():
     for bomb in state["placed_bombs"]:
         if bomb["spawned"]:
             screen.blit(bomb_image, (bomb["x_pos"] - 25, bomb["y_pos"] - 25))
+    for snowflake in state["snowflakes"]:
+        if snowflake["spawned"]:
+            screen.blit(
+                snowflake_image, (snowflake["x_pos"] - 25, snowflake["y_pos"] - 25)
+            )
     for explosion in state["explosions"]:
         if explosion["spawned"]:
             screen.blit(
@@ -88,6 +100,8 @@ def render_player(id):
             screen.blit(dead_image, (player["x_pos"] - 50, player["y_pos"] - 50))
         elif player["damage_taken"]:
             screen.blit(damaged_image, (player["x_pos"] - 50, player["y_pos"] - 50))
+        elif player["stunned"]:
+            screen.blit(frozen_image, (player["x_pos"] - 50, player["y_pos"] - 50))
         else:
             screen.blit(player_images[id], (player["x_pos"] - 50, player["y_pos"] - 50))
 

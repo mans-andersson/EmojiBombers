@@ -4,6 +4,7 @@ type state struct {
 	Players []player `json:"players"`
 	Blockades []blockade `json:"blockades"`
 	Bombs []bomb  `json:"bombs"`
+	Snowflakes []bomb `json:"snowflakes"`
 	PlacedBombs []bomb `json:"placed_bombs"`
 	Explosions []bomb `json:"explosions"`
 	Winner int `json:"winner"`
@@ -17,6 +18,7 @@ type player struct {
 	BombCount int `json:"bomb_count"`
 	Lives int `json:"lives"`
 	DamageTaken bool `json:"damage_taken"`
+	Stunned bool `json:"stunned"`
 	Dead bool `json:"dead"`
 }
 
