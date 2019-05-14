@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
+// Holds the state of the game
 var gameState state
+
+// Variable used to give players unique ID's
 var id int
 
 func main() {
@@ -25,6 +28,7 @@ func main() {
 		return
 	}
 	for {
+		// Accept new connections and handle them in parallel with handleConnection
 		conn, err := ln.Accept()
 		if err != nil {
 			fmt.Println(err)
@@ -37,27 +41,35 @@ func main() {
 func handleConnection(c net.Conn) {
 	fmt.Printf("Serving %s\n", c.RemoteAddr().String())
 	if id > 3 {
+		// This means that the maximum number of players has been reached
 		return
 	}
 	playerID := id
+	// Set player as spawned
 	gameState.Players[playerID].Spawned = true
 	id++
 	go sendState(c)
 	for {
+		// Contiously read data sent from the client and process it
 		time.Sleep(10 * time.Millisecond)
 		command := action{}
 		netData, err := bufio.NewReader(c).ReadString(';')
 		if err != nil {
-			// fmt.Println(err)
+			fmt.Println(err)
 		}
 		if len(netData) > 0 {
 			netData = netData[:len(netData)-1]
 		}
 		err = json.Unmarshal([]byte(netData), &command)
-		go processCommand(playerID, &command)
+		if(err != nil){
+			fmt.Println(err)
+		} else {
+			go processCommand(playerID, &command)
+	}
 	}
 }
 
+// Continously send the game state on the connection
 func sendState(c net.Conn) {
 	for {
 		time.Sleep(16 * time.Millisecond)
@@ -65,6 +77,7 @@ func sendState(c net.Conn) {
 	}
 }
 
+// Add all the blockades to the game state
 func addBlockades() {
 	for i := 0; i <= 800; i += 200 {
 		for j := 0; j <= 800; j += 200 {
@@ -73,6 +86,9 @@ func addBlockades() {
 	}
 }
 
+// Wait until at least two players are connected
+// After that bombs and snowflakes start spawning
+// We also start to check for player damage and the victory condition
 func waitForStart() {
 	for {
 		time.Sleep(1000 * time.Millisecond)
@@ -86,6 +102,8 @@ func waitForStart() {
 	}
 }
 
+// Fills up the list with four players
+// Spawned will be false at this state so they won't be rendered
 func initializePlayers() {
 	for i := 0; i < 4; i++ {
 		gameState.Players = append(gameState.Players, player{ID: i})
@@ -100,6 +118,7 @@ func initializePlayerLives() {
 	}
 }
 
+// Sets the four players to the starting positions in the four corners
 func initializeStartingPositions() {
 	startingXPos := []int{100, 700, 100, 700}
 	startingYPos := []int{100, 700, 700, 100}
@@ -109,6 +128,8 @@ func initializeStartingPositions() {
 	}
 }
 
+// Adds all the default bomb positions to the game state
+// Spawned will be false for all of them at this stage so they won't be rendered
 func initializeBombs() {
 	bombs := []bomb{}
 	for i := 100; i < 800; i += 200 {
@@ -119,6 +140,8 @@ func initializeBombs() {
 	gameState.Bombs = bombs
 }
 
+// Adds all the default snowflake positions to the game state
+// Spawned will be false for all of them at this stage so they won't be rendered
 func initializeSnowflakes() {
 	snowflakes := []bomb{}
 	for i := 100; i < 800; i += 200 {
@@ -129,6 +152,9 @@ func initializeSnowflakes() {
 	gameState.Snowflakes = snowflakes
 }
 
+// Initializes four placed bombs
+// Spawned will be set to true and their positions will be changed when they are
+// actually placed
 func initializePlacedBombs() {
 	placedBombs := []bomb{}
 	for i := 0; i < 4; i++ {
@@ -137,6 +163,10 @@ func initializePlacedBombs() {
 	gameState.PlacedBombs = placedBombs
 }
 
+
+// Initializes four explosions
+// Spawned will be set to true and their positions will be changed when they are
+// a player blows a bomb
 func initializeExplosions() {
 	explosions := []bomb{}
 	for i := 0; i < 4; i++ {
@@ -145,6 +175,8 @@ func initializeExplosions() {
 	gameState.Explosions = explosions
 }
 
+
+// Spawn a bomb in a random default bomb position every 4 seconds
 func spawnBombs() {
 	for {
 		time.Sleep(4000 * time.Millisecond)
@@ -154,6 +186,7 @@ func spawnBombs() {
 	}
 }
 
+// Spawn a snowflake in a random bomb position every 4 seconds
 func spawnSnowflakes() {
 	for {
 		time.Sleep(10000 * time.Millisecond)
@@ -163,6 +196,7 @@ func spawnSnowflakes() {
 	}
 }
 
+// Check if a player collides with an explosion
 func checkDamage() {
 	for {
 		time.Sleep(16 * time.Millisecond)
@@ -177,6 +211,9 @@ func checkDamage() {
 	}
 }
 
+
+// Check if there is only one player alive, in that case they are the winner
+// Wait for 5 seconds then reset the game
 func checkVictory() {
 	for {
 		time.Sleep(1000 * time.Millisecond)
@@ -192,6 +229,7 @@ func checkVictory() {
 	}
 }
 
+// Initialize the default state of the game
 func resetGame() {
 	gameState.Winner = -1
 	initializeStartingPositions()
@@ -202,6 +240,8 @@ func resetGame() {
 	initializePlacedBombs()
 }
 
+// Look to see if there is only one player alive
+// In that case return their ID. Otherwise return -1
 func getWinner() int {
 	aliveCount := 0
 	potentialWinner := 0
@@ -227,6 +267,9 @@ func countSpawnedPlayers() int {
 	return counter
 }
 
+// If a player has been damaged decrement their lives and check if they're dead
+// If they are not dead they will be invulnerable for 1.5 seconds before
+// they can take damage again
 func playerDamaged(id int) {
 	gameState.Players[id].Lives--
 	if(gameState.Players[id].Lives == 0) {
@@ -236,6 +279,7 @@ func playerDamaged(id int) {
 	gameState.Players[id].DamageTaken = false
 }
 
+// Convert the current game state to a json byte array
 func stateToJsonTransmission() []byte {
 	result := ([]byte)(";")
 	s, err := json.Marshal(&gameState)
@@ -243,11 +287,11 @@ func stateToJsonTransmission() []byte {
 		return []byte{}
 	}
 	result = append(s, ([]byte)(";")...)
-	fmt.Println(string(result))
-	fmt.Println("")
 	return result
 }
 
+
+// Process a command received from the client and act accordingly
 func processCommand(id int, command *action) {
 	if gameState.Players[id].Dead {
 		return
@@ -265,6 +309,10 @@ func processCommand(id int, command *action) {
 	}
 }
 
+
+// Place a bomb at the specified position
+// The id is the id of the player who is placing it
+// A player can only have one placed bomb at a time
 func placeBomb(id int, x int, y int) {
 	if gameState.PlacedBombs[id].Spawned || gameState.Players[id].BombCount == 0 {
 		return
@@ -276,6 +324,8 @@ func placeBomb(id int, x int, y int) {
 	go explodeBomb(id)
 }
 
+// Wait for a short while before a specific placed bomb gets converted to an
+// explosion
 func explodeBomb(id int) {
 	time.Sleep(2000 * time.Millisecond)
 	gameState.PlacedBombs[id].Spawned = false
@@ -286,6 +336,8 @@ func explodeBomb(id int) {
 	gameState.Explosions[id].Spawned = false
 }
 
+
+// Stun all players except the one with the specified id
 func stunPlayers(id int) {
 	for i, p := range gameState.Players {
 		if(p.ID != id) {
@@ -302,22 +354,29 @@ func stunPlayers(id int) {
 
 func movePlayer(id int, direction string) {
 	if(gameState.Players[id].Stunned) {
+		// The player is stunned, do nothing
 		return
 	}
 	newX, newY := newPosition(id, direction)
 	if(newX > 800 || newX < 0 || newY > 800 || newY < 0) {
+		// The player is trying to move outside of the screen, do nothing
 		return
 	}
+	// Check for collisions with other players
 	for _, player := range gameState.Players {
 		if(distance(newX, newY, player.XPos, player.YPos) <= 100) && player.ID != id && player.Spawned {
+			// If colliding - do nothing
 			return
 		}
 	}
+	// Check for collisions with blockades
 	for _, blockade := range gameState.Blockades {
 		if(distance(newX, newY, blockade.XPos, blockade.YPos) <= 75) {
+			// If colliding - do nothing
 			return
 		}
 	}
+	// Check for collisions with bombs, if collided - pick it up
 	for i, bomb := range gameState.Bombs {
 		if(bomb.Spawned) {
 			if(distance(newX, newY, bomb.XPos, bomb.YPos) <= 75) {
@@ -326,6 +385,7 @@ func movePlayer(id int, direction string) {
 			}
 		}
 	}
+	// Check for collisions with snowflakes, if collided - stun the other players
 	for i, snowflake := range gameState.Snowflakes {
 		if(snowflake.Spawned) {
 			if(distance(newX, newY, snowflake.XPos, snowflake.YPos) <= 75) {
@@ -334,11 +394,14 @@ func movePlayer(id int, direction string) {
 			}
 		}
 	}
+	// Confirm the movement
 	gameState.Players[id].XPos = newX
 	gameState.Players[id].YPos = newY
 }
 
 
+// Calculate what might become the new position of the player based on
+// the direction of movement
 func newPosition(id int, direction string) (int, int){
 	oldX, oldY := gameState.Players[id].XPos, gameState.Players[id].YPos
 	if direction == "up" {
@@ -352,6 +415,8 @@ func newPosition(id int, direction string) (int, int){
 	}
 }
 
+
+// The distance formula
 func distance(x1 int, y1 int, x2 int, y2 int) float64 {
 	return math.Sqrt(math.Pow(float64(x1 - x2), 2) + math.Pow(float64(y1 - y2), 2))
 }

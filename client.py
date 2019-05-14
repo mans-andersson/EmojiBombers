@@ -5,6 +5,7 @@ import json
 import threading
 
 pygame.init()
+# This variable holds the entire state of the game
 state = {
     "players": [],
     "blockades": [],
@@ -14,6 +15,8 @@ state = {
     "explosions": [],
     "winner": -1,
 }
+
+# Initializing pygame and all assets
 screen = pygame.display.set_mode((800, 800), pygame.DOUBLEBUF)
 player_image_1 = pygame.image.load("assets/player1.png").convert_alpha()
 player_image_2 = pygame.image.load("assets/player2.png").convert_alpha()
@@ -29,8 +32,12 @@ dead_image = pygame.image.load("assets/dead.png").convert_alpha()
 explosion_image = pygame.image.load("assets/explosion.png").convert_alpha()
 victory_text = pygame.image.load("assets/victory_text.png").convert_alpha()
 player_images = [player_image_1, player_image_2, player_image_3, player_image_4]
+
+# Establish connection to the server, crash if fail
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect(("127.0.0.1", 8080))
+
+# Variable to keep track of how often to do certain things
 last_update = pygame.time.get_ticks()
 
 
@@ -41,6 +48,8 @@ def main():
         render()
 
 
+# Updates state based on data received from the server
+# Runs in a seperate thread
 def listener():
     while True:
         new_state = receive_state()
@@ -54,6 +63,7 @@ def listener():
             print("Couldn't load data into state")
 
 
+# Helper for listener()
 def receive_state():
     buffer = ""
     while True:
@@ -65,9 +75,11 @@ def receive_state():
                     return res
 
 
+# Renders all the graphics of the game based on the contents in state
 def render():
     screen.fill((0, 0, 0))
     if state["winner"] != -1:
+        # Someone won the game
         render_victory_message(state["winner"])
         return
     for player in state["players"]:
@@ -93,6 +105,8 @@ def render():
     pygame.display.update()
 
 
+# Render different images for players based on their ID
+# Special images are used when a player is dead, damaged or stunned
 def render_player(id):
     player = state["players"][id]
     if player["spawned"]:
@@ -106,6 +120,7 @@ def render_player(id):
             screen.blit(player_images[id], (player["x_pos"] - 50, player["y_pos"] - 50))
 
 
+# Renders a special victory message based on the id of the winning player
 def render_victory_message(winnerID):
     screen.blit(player_images[winnerID], (350, 350))
     screen.blit(victory_text, (100, 460))
@@ -119,6 +134,7 @@ def events():
             sys.exit()
 
 
+# Read keypresses and send corresponding json data to the server
 def keypress():
     global last_update
     current_time = pygame.time.get_ticks()
