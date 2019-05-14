@@ -1,3 +1,5 @@
+# Written by Måns Andersson
+
 import pygame
 import sys
 import socket

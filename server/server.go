@@ -1,3 +1,5 @@
+// Written by: Måns Andersson
+
 package main
 
 import (
