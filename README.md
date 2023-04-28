@@ -10,5 +10,5 @@ After that you navigate to the server/ folder and enter the command ```go run *.
 ## Client
 To run the client you need Python 3 and pygame installed. At that point you can simply start the client with the command ```python3 client.py```. You can change what ip you want to connect to by changing the line ```s.connect(("127.0.0.1", 8080))```. You need to start the server before the client.
 
-## Screenshot
-![screenshot](assets/screenshot.png "Screenshot")
+## Gameplay
+![Gameplay](assets/gameplay.gif "Gameplay gi")
