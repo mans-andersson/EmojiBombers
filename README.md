@@ -1,7 +1,7 @@
 # EmojiBombers
 This is a game inspired by the classic Bomberman. It implements multiplayer functionality using TCP sockets.
 
-The software has two parts, a client and a server.
+The software has two parts, a client and a server. Up to four players can connect per game.
 
 ## Server
 To run the server you need golang installed.
@@ -11,4 +11,4 @@ After that you navigate to the server/ folder and enter the command ```go run *.
 To run the client you need Python 3 and pygame installed. At that point you can simply start the client with the command ```python3 client.py```. You can change what ip you want to connect to by changing the line ```s.connect(("127.0.0.1", 8080))```. You need to start the server before the client.
 
 ## Gameplay
-![Gameplay](assets/gameplay.gif "Gameplay gi")
+![Gameplay](assets/gameplay.gif "Gameplay gif")
